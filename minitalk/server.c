@@ -15,9 +15,9 @@ void    message_handler(int signum)
 {
     static int i = 0;
     static char c = 0;
+    int bit;
 
-    if (signum == SIGUSR1)
-        c = c | (1 << i);
+    c = c << 1 | (signum == SIGUSR1);
     i++;
     if (i == 8)
     { 

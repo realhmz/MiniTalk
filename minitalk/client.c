@@ -36,15 +36,15 @@ void singal_handler(int pid, char *str)
     i = 0;
     while (str[i])
     {
-        j = 0;
-        while (j < 8)
+        j = 8;
+        while (j > 0)
         {
-            bit = (str[i] >> j) & 1;
+            bit = (str[i] >> (j - 1)) & 1;
             if (bit == 1)
                 kill(pid, SIGUSR1);
             else
                 kill(pid, SIGUSR2);
-            j++;
+            j--;
             usleep(100);
         }
         i++;

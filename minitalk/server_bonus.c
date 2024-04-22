@@ -1,14 +1,9 @@
 #include <signal.h>
 #include <stddef.h>
+#include <stdlib.h>
 #include <unistd.h>
 
-int recived(int signum)
-{
-    if(signum)
-        return (1);
-    else
-        return (0);
-}
+
 void    ft_putnbr(int n)
 {
     char c;
@@ -18,27 +13,34 @@ void    ft_putnbr(int n)
     write(1, &c, 1);
 }
 
-void    message_handler(int signum,siginfo_t *info, void *ptr)
+void    message_handler(int signum, siginfo_t *info, void *ptr)
 {
+    static int pid = 0;
     static int i = 0;
     static char c = 0;
-
-    if (signum == SIGUSR1)
-        c = c | (1 << i);
+    if (pid == 0)
+        pid = info->si_pid;
+    if(pid != info->si_pid)
+        exit(1);
+    c = (c << 1) | (signum == SIGUSR1);
     i++;
-    kill(info->si_pid,SIGUSR1);
-    if (i == 8)
+    if (i % 8 == 0)
     { 
         if (!c)
         {
+            write(1, "\n", 1);
             kill(info->si_pid,SIGUSR2);
-            write(1,"finish",6);
+            pid = 0;
         }
         else
+        {
             write(1, &c, 1);
+        }
         i = 0;
         c = '\0';
     }
+    usleep(100);
+    kill(info->si_pid,SIGUSR1);
 }
 int main(int ac, char **av)
 {

@@ -1,5 +1,6 @@
 #include <signal.h>
 #include <stddef.h>
+#include <stdlib.h>
 #include <unistd.h>
 
 int ft_atoi(char *str)
@@ -28,62 +29,54 @@ int ft_atoi(char *str)
 }
 
 char *str;
-
-void    bit_sender(int signum,siginfo_t *info,void *ptr)
+size_t ft_strlen(char *str)
 {
-    static int i = 0;
-    static int j = 0;
-    int bit;
-    if (signum == SIGUSR1)
-        bit = 1;
-    else
-        bit = 0;
-    if (bit == ((str[i] >> j) & 1))
+    size_t i = 0;
+    while (str && str[i])
     {
-        j++;
-        if (j == 8)
+        i++;
+    }
+    return (i + 1);
+}
+void    bit_sender(int pid)
+{
+    static size_t i;
+    static size_t len;
+    static int bit = 0;
+    if (!len)
+    {
+        len = ft_strlen(str);
+    }
+
+    if (i < len)
+    {
+        printf("len: %zu;   ", len);
+        printf("char being sent: %d\n", i);
+        if ((str[i] >> (7 - bit)) & 1)
+            kill(pid, SIGUSR1);
+        else
+            kill(pid, SIGUSR2);
+        bit++;
+        if(bit % 8 == 0)
         {
             i++;
-            j = 0;
-            if (str[i] == '\0')
-            {
-                write(1, "Message sent\n", 13);
-                kill(info->si_pid, SIGUSR2);
-            }
+            bit = 0;
         }
-        kill(info->si_pid, SIGUSR1);
     }
-    if (signum == 0)
-    {
-        return ;
-    }
-    else
-    {
-        write(1, "Error\n", 6);
-        kill(info->si_pid, SIGUSR2);
-    }   
 }
-
 void    handler(int signum,siginfo_t *info, void *ptr)
 {
     if (signum == SIGUSR1)
-        bit_sender(signum,info,ptr);
+        bit_sender(info->si_pid);
     else if (signum == SIGUSR2)
-        return ;
+        exit(1) ;
 }
-void    send_first_bit(int pid)
-{
-    int bit;
-            bit = (str[0] >> 0) & 1;
-            if (bit == 1)
-                kill(pid, SIGUSR1);
-            else
-                kill(pid, SIGUSR2);
-}
-int pid;
+
+
 int main(int ac, char **av)
 {
     struct  sigaction   action;
+    int pid;
     if(ac != 3)
         return 1;
     pid = ft_atoi(av[1]);
@@ -93,7 +86,7 @@ int main(int ac, char **av)
     sigemptyset(&action.sa_mask);
     sigaction(SIGUSR1, &action, NULL);
     sigaction(SIGUSR2, &action, NULL);
-    send_first_bit(pid);
+    bit_sender(pid);
     while (1)
         pause();
     return 0;
